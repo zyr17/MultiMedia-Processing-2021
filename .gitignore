@@ -1,9 +1,2 @@
-*.aux
-*.bbl
-*.log
-*.blg
-*.out
-*.pdf
-*.synctex.gz
-*.thm
-*.toc
+main.*
+!main.tex

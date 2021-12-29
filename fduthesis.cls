@@ -1156,7 +1156,7 @@
           %{ \l__fdu_info_department_tl },
           { \l__fdu_info_major_tl      },
           { \l__fdu_info_author_tl     },
-          { \l__fdu_name_student_id_tl },
+          { \l__fdu_info_student_id_tl },
           %{ \l__fdu_info_supervisor_tl },
           { \l__fdu_info_date_tl       }
         }
