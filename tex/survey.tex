@@ -1,0 +1,270 @@
+\chapter{多模态融合工作调研}\label{chap:survey}
+
+在本章，我们总结调研了目前的多模态融合学习工作。
+在该问题中，Transformer是最流行的结构，几乎所有工作都使用了该结构。
+Transformer结构在多模态融合任务上有下述优势：
+
+\begin{itemize}
+    \item Transformer模型学习能力强，在大规模训练数据时表现尤为突出。
+    由于多模态融合数据量都很大，因此该结构效果很好。
+    \item Transformer结构在视觉和自然语言处理方向都取得了成功，
+    使用该结构可以更好的利用已有成果。
+\end{itemize}
+
+同时，随着数据规模的不断增大，以及Transformer结构在预训练任务上取得的成功，
+目前该方向的工作几乎都采用了大规模数据预训练，并在之后微调或是零样本学习的方式。
+预训练方法是指通过使用大规模数据进行训练，不针对某个特定下游任务，
+使模型能够学习到对训练数据的一个较好的表示，从而经过简单的线性探测，甚至是零样本测试，
+在下游任务上取得更好的效果。
+
+% Please add the following required packages to your document preamble:
+% \usepackage{multirow}
+% \usepackage{graphicx}
+\begin{sidewaystable}[]
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l|c|l|l|l|l}
+\hline
+工作 & \multicolumn{1}{l|}{融合方法} & 预训练任务 & 模态编码网络 & 下游任务 & 预训练数据集 \\ \hline
+VideoBERT\cite{videobert} & \multirow{11}{*}{单流} & MLM, SIP & S3D & $z$-CLS, VC & YouCook II \\
+VIsualBERT\cite{visualbert} &  & MLM, SIP & RCNN, ResNet & VQA, VCR, NLVR, REC & COCO \\
+VL-BERT\cite{vlbert} &  & MLM, MOC & RCNN, ResNet & VQA, VCR, REC & CC, BooksCorpus, $eng$-Wikipedia \\
+Oscar\cite{oscar} &  & MLM, Contrastive & RCNN, ResNet & VQA, NLVR, I2TR, IC & COCO, CC, SBU, M30K, GQA \\
+UNITER\cite{uniter} &  & MLM, SIP, WRA, MRM, MRFR, MOC & RCNN & VQA, VCR, NLVR, I2TR, T2IR, REC & COCO, VG, CC, SBU \\
+Unicoder-VL\cite{unicodervl} &  & MLM, SIP, MOC & RCNN & I2TR, $z$-I2TR, VCR & CC, SBU \\
+M3P\cite{m3p} &  & MLM, SIP, MRM, MMLM & RCNN & $ml$-I2TR & CC, $ml$-Wikipedia \\
+UC$^2$\cite{uc2} &  & MLM, SIP, MRM, EA, VTLM & RCNN & $ml$-I2TR, $ml$-VQA & M30K, COCO \\
+M6\cite{m6} &  & MLM, MMLM, ISG & / & VQA, IC, I2TR, TG, T2IG & 非公开 \\
+ViLT\cite{vilt} &  & MLM, SIP & / & VQA, NLVR, I2TR, T2IR & COCO, VG, SBU, GCC \\
+SOHO\cite{soho} &  & MLM, SIP & ResNet & VQA, NLVR, I2TR & COCO, VG \\ \hline
+ViLBERT\cite{vilbert} & \multirow{10}{*}{双流} & MLM, SIP, MOC & RCNN, ResNet, BERT & VQA, VCR, REC, T2IR, $z$-T2IR & CC \\
+LXMERT\cite{lxmert} &  & MLM, SIP, MOC, MRFR & RCNN, ResNet, BERT & VQA, NLVR & COCO \\
+CBT\cite{cbt} &  & Contrastive & S3D, BERT & VC, AR, AS & Kinetics \\
+CLIP\cite{clip} &  & Contrastive & ResNet/ViT, BERT & $z$-CLS, CLS & 非公开 \\
+12-in-1\cite{12in1} &  & MLM, SIP, MOC & RCNN, ResNet, BERT & VQA, NLVR, REC, T2IR & CC \\
+WenLan\cite{wenlan} &  & Contrastive & RCNN, RoBERTa & IC, I2TR, T2IR & 非公开 \\
+ALIGN\cite{align} &  & Contrastive & EfficientNet, BERT & I2TR, T2IR, I2IR, T2TR, CLS & 非公开 \\
+COOKIE\cite{cookie} &  & Contrastive & ResNet, BERT & I2TR, I2TR, T2TR, CLS & CC, SBU, COCO, F30K, VQA 2.0, GQA \\
+ClipBERT\cite{clipbert} &  & Contrastive & ResNet, BERT & T2IR VQA & COCO, VG \\
+ZeroVL\cite{zerovl} &  & Contrastive & ViT/SwinT, BERT & T2IR, I2TR, $z$-T2IR, $z$-I2TR & CC, CC12M, SBU, VG, 非公开 \\ \hline
+\end{tabular}%
+}
+\caption{近期基于Transformer的视觉-文本模态融合工作}
+\label{tab:overall}
+\end{sidewaystable}
+
+表\ref{tab:overall}中，我们总结了近期使用Transformer结构的视觉-文本模态融合工作，
+以及它们的重要特征。针对这些工作的异同，我们在
+第\ref{sec:singledouble}节讨论了该任务上两种不同的多模态融合思路，
+第\ref{sec:pretrain}节介绍了训练时不同方法使用的预训练任务，
+第\ref{sec:backbone}节根据模型使用的编码网络进行分类，
+第\ref{sec:downstream}节说明了模型应用的下游任务，
+第\ref{sec:dataset}节统计了不同工作使用的数据来源。
+
+\section{单流和双流多模态融合学习}\label{sec:singledouble}
+
+在多模态融合学习中，主要分为了单流模型和双流模型两种方法。
+两种方法最大的区别是：单流模型中，两个模态从一开始就进行融合，
+最后得到一个统一表示。双流模型中，两个模态则首先分别经过两个独立的编码模块，
+再将编码后的结果互相交互，最终得到融合表示。
+从工作的分布来看，在多模态融合任务中单流和双流均有大量工作。
+
+单流的工作中，VideoBERT\cite{videobert}是该方向的开山之作之一，
+建立了单流多模态融合问题的基本思路。该方向文章的主要思路为：
+
+\begin{itemize}
+    \item 获取多模态数据，通过模态编码网络或不进行处理，输入融合Transformer。
+    \item 设计预训练任务，使模型能够学习到模态间信息，并得到多模态数据的表示。
+    \item 使用线性探测或零样本学习，将学习到的表示用于下游任务。
+\end{itemize}
+
+然而，单流模式也有其难点。首先，视觉模态和文本模态输入之间差距巨大，
+在设计预训练任务时却大多按照BERT的训练模式，忽略了模态间的关联和差异性，
+导致信息泄露，或者是提高模型学习难度。其次，单流模型中的Transformer大多使用在文本上预训练的参数初始化，
+但是这和图片输入完全不匹配，大量新增的图片输入可能会让模型学习困难，
+甚至对文本表示也产生影响。在接下来的工作中，也大多朝着这两个方向进行优化，
+设计了更贴合多模态的预训练任务，以及对文本和图片模态做更显著的区分来改善模型学习效果。
+
+双流多模态融合学习也是一个主流方向。由于双流模型首先使用各自模态的编码网络将模态输入转换为向量表示，
+该模型可以较为简单的更换编码模型，从而更容易使用单模态研究取得的新进展。
+同时，使用双流多模态融合学习时，一般会对模态编码模型进行微调，
+由于模型可以利用多个模态数据，这一般也会使编码模型生成的编码质量有所提升。
+
+ViLBERT\cite{vilbert}是该方向的重要工作，它首先得到不同模态数据的向量表示，
+然后使用互注意力方法，得到质量更好的模态表示向量。
+在对比学习提出后，由于该学习方式在超大规模数据上具有出色的效果，
+在双流学习方法上也被广泛采用。
+该方向文章的主要思路为：
+
+\begin{itemize}
+    \item 获取多模态数据，通过模态编码网络得到模态向量表示。
+    \item 学习模态表示间的交互方法，从而将多模态数据表示融合，或是表示于同一空间。
+    \item 使用线性探测或零样本学习，将学习到的表示用于下游任务。
+\end{itemize}
+
+双流模式也存在一些困难。由于模态是分别经过各自的编码网络的，
+虽然这带来了替换编码网络的方便性，但是也使网络结构较为分散，
+可能会影响最终效果。
+
+\section{预训练任务}\label{sec:pretrain}
+
+本节会介绍不同工作涉及的预训练任务。部分工作的预训练任务可能会有微小不同，
+为了统一在本质不变的情况下归为一类。
+\begin{itemize}
+    \item \textbf{Masked Language Modeling (MLM)。}该任务是BERT使用的预训练任务之一，
+    所有使用Transformer融合结构的方法均使用了该任务。
+    该任务会在训练时随机将部分词语替换成\verb|[MASK]|，或是随机的一个词，
+    并要求模型能够在经过Transformer后将词语还原。该方法也包含众多变种，
+    例如遮挡部分必须连续\cite{m6}、只对文本进行遮挡\cite{visualbert}、图片遮挡时作用于全输入\cite{vlbert}，
+    遮挡文本时同时遮挡相关标签\cite{oscar}等。
+    在多语言学习任务中，
+    还存在两个类似的变种任务，分别为\textbf{Visual Translation Language Modeling (VTLM)}和\textbf{Multimodality Masked Language Modeling (MMLM)}。
+    前者使用图像模态作为输入，需要同时还原两个不同语言文本；后者则使用图像和其他语言文本作为输入还原文本。
+    
+    \item \textbf{Sentence-Image Prediction (SIP)。}该方法类似于BERT中的下一句预测(NSP)，
+    给定两个模态输入，判断这两个模态是不是来自于同一个数据。
+    
+    \item \textbf{Masked Object Classification (MOC) / Masked Region Modelling (MRM) / Masked Region Feature Regression (MRFR)。}
+    这些目标概念基本相同，在包含目标检测的方法中，
+    许多方法采用了该任务，对被遮盖物体进行分类或者对被遮盖的向量回归。其本质上和MLM相同，
+    都是遮盖了数据的部分信息并让模型尝试还原。
+    
+    \item \textbf{Word-Region Alignment (WRA)。}该任务需要将文本中的单词和对应的目标检测框对齐。
+    这有助于模型能够理解图像和文本之间的对应关系。
+    
+    \item \textbf{Image Sentence Generation (ISG)。}该任务是一个生成任务，根据图片生成图片的标题，
+    与真实标题比较相似性。
+    
+    \item \textbf{Contrastive。}对比学习是近年来热门的方法。对比学习需要模型能够从海量负例中找到正例。
+    在单模态对比学习中，一般会采用数据增强的方式构造正例。而在多模态任务中，
+    由于不同模态的数据天然表示了同一概念，因此非常适合使用对比学习。
+    使用这种方法的多为双流模式，使用该任务约束两个模态的向量表示，让语义越接近的模态数据其向量表示也越接近。
+    对向量距离进行度量时，常用简单的向量夹角距离。该方法目标上类似于Triplet Loss，
+    但是在效果上和Triplet Loss相比占有明显优势。在UC$^2$中使用了\textbf{Early Adaption (EA)}方法，
+    和对比学习类似，它使用KL散度约束图像和文本的向量位于同样空间。
+\end{itemize}
+
+\section{模态编码网络}\label{sec:backbone}
+
+由于涉及到多个模态的输入，多模态融合模型一般会使用每个模态对应的编码网络，
+从而得到一个模态更好的表示，便于进一步学习。其中单流工作一般直接将文本模态直接输入Transformer模型，
+而对视觉模态使用编码网络。在双流工作中，则会对视觉和文本两个模态都使用编码网络。
+
+在视觉编码网络中，主要涉及S3D、RCNN、ResNet和ViT这四类网络。\textbf{S3D}\cite{xie2018rethinking}是一种针对视频的编码网络，
+可以编码视频的时序信息，被部分视频-文本多模态学习的方法使用。但是由于视频模态的数据量相比图片模态具有明显劣势，
+导致视频模态的预训练编码网络质量较图像模态不占优势，在ClipBERT\cite{clipbert}等方法中，
+虽然也研究了视频-文本多模态学习，却仍使用图像模态编码网络(ResNet等)，
+并取得了更好的效果。\textbf{RCNN}\cite{ren2015faster}用于从图像中识别目标物体。
+由于图像模态和文本模态的信息密度差距很大，因此很多方法，尤其是单流方法会先使用RCNN识别图像中的物体，
+再将识别到的物体图像作为输入。这虽然降低了网络从图像中学习的难度，
+但是因为物体识别网络不够准确，也可能影响最终效果。
+在数据规模较大的时候，大多不会使用目标识别网络辅助。
+\textbf{ResNet}\cite{he2015deep}是基于卷积神经网络的，在视觉模态最流行的网络之一，
+绝大部分方法都使用了该网络进行图像模态的编码，以及用于识别目标物体。
+它也具有很多变种和改进型，在表\ref{tab:overall}中的EfficientNet就是其中之一。
+\textbf{ViT}\cite{dosovitskiy2020image}是今年来成功将Transformer结构用于图像模态任务的成功代表，
+相比基于卷积神经网络的模型，在训练数据量较大的时候会更具优势。
+Swin Transformer (SiwnT)\cite{liu2021swin}是由微软提出的该方法的一种改进版本。
+
+在双流模式中，方法还需要文本编码网络。几乎所有方法都使用了BERT\cite{devlin2019bert}作为其编码网络,
+这说明了在文本编码领域其领先地位。也有部分方法使用了BERT的改进型RoBERTa\cite{liu2019roberta}作为编码网络。
+
+\section{下游任务}\label{sec:downstream}
+
+% Please add the following required packages to your document preamble:
+% \usepackage{graphicx}
+% \usepackage{lscape}
+\begin{table}[]
+\begin{tabular}{c|c|c}
+\hline
+简称 & 全称 & 中文名 \\ \hline
+I2TR & Image-to-Text Retrieval & 图像到文本召回 \\
+T2IR & Text-to-Image Retrieval & 文本到图像召回 \\
+I2IR & Image-to-Image Retrieval & 图像到图像召回 \\
+T2TR & Text-to-Text Retrieval & 文本到文本召回 \\
+CLS & Classification & 分类 \\
+AR & Action Recognition & 视频动作识别 \\
+AS & Action Segmentation & 视频动作分段 \\
+VQA & Visual Question Answering & 视觉问题回答 \\
+REC & Referring Expression Comprehension & 指代目标理解 \\
+VCR & Visual Commonsence Reasoning & 视觉常识推理 \\
+NLVR & \multicolumn{1}{l|}{Natural Language for Visual Reasoning} & \multicolumn{1}{l}{用于视觉推理的自然语言} \\
+IC & Image Captioning & 图像标题生成 \\
+VC & Video Captioning & 视频标题生成 \\
+T2IG & Text-to-Image Generation & 文本到图像生成 \\
+TG & Text Generation & 文本生成 \\
+\hline
+\end{tabular}
+\caption{下游任务简称和对应名称}
+\label{tab:downstream}
+\end{table}
+
+为了检验预训练学习结果，需要将模型应用在下游任务上测试性能。
+常见的测试方法是使用所学模型生成多模态数据的向量表示，然后训练线性探测模块得到任务结果。
+也有部分模型尝试了零样本(zero-shot)方法，在不经过额外训练的情况下直接测试模型效果，
+以证明模型学习到表示的泛用性。在下游任务中，如果带有$z$-前缀，
+表示该任务是零样本测试的，如果带有$ml$-前缀，说明任务在本身的基础上还涉及多语言场景，
+例如$ml$-I2TR任务会使用图像模态输入在多种不同语言中召回对应文本。
+表\ref{tab:overall}中下游任务简称的意义见表\ref{tab:downstream}。
+下游任务主要可以分为如下几类：
+
+\begin{itemize}
+    \item \textbf{召回任务(I2TR, T2IR, I2IR, T2TR)。}召回任务是多模态学习中最传统的任务之一。
+    模型得到一个模态的锚点数据，并需要从另一个模态的所有候选数据中找到和锚点最接近的数据。
+    在单流模型中类似SIP预训练任务，在双流模型中类似Contrastive任务。
+    
+    \item \textbf{分类任务(CLS, AR, AS)。}该任务是单模态中的传统任务，
+    以ImageNet数据集为例，模型需要获取图片，并给出该图片所属的类别。
+    由于多模态任务是使用图像-文本的训练方式，在完成分类任务时，
+    一般会将图像对应类别使用模板学习(prompt learning)方法转换为句子，
+    例如类别bird会转换成There is a bird in the picture。
+    对于每个类别构造对应的句子，并使用召回任务的思路就可以得到分类结果。
+    
+    \item \textbf{问题回答(VQA, REC, VCR, NLVR)。}该任务会给出视觉模态的数据和文本模态的问题，
+    模型需要根据视觉信息和问题给出问题的回答。这个任务检测了模型的多模态语言理解能力。
+    
+    \item \textbf{生成任务(IC, VC, T2IG, TG)。}该任务获取一个模态的输入，
+    并生成未输入模态的结果。
+\end{itemize}
+
+\section{预训练数据集}\label{sec:dataset}
+
+在预训练中，数据集大小会非常显著的影响模型性能，尤其是零样本任务中\cite{align}。
+表\ref{tab:dataset}给出了不同数据集的数据量大小。
+大部分方法都说明了使用的数据集规模。
+有部分方法除了公开数据集外，还使用了部分网络收集的或是私有数据集，
+我们也给出了这些方法相关数据集的规模。
+
+\begin{table}[]
+\centering
+\begin{tabular}{c|cc}
+数据集名称 & 图片/视频数量(个) & 文本数量(句) \\ \hline
+YouCook II & 2K$^*$ & 10K \\
+COCO & 113K & 565K \\
+CC & 3M$^*$ & 3M \\
+CC12M & 12M$^*$ & 12M \\
+BooksCorpus & / & 74M \\
+$eng$-Wikipedia & / & ? \\
+$ml$-Wikipedia & / & 101G\footnote{111} \\
+SBU & 1M$^*$ & 1M \\
+F30K & 31K & 153K \\
+M30K & 30K & 150K \\
+VG & 108K & 5.4M \\
+GQA & 113K & 22.7M \\
+VQA 2.0 & 265K & 1.4M \\
+GCC & 3M & 3M \\
+Kinetics & 500K & 500K \\
+M6-非公开数据 & 60M & 400M \\
+CLIP-非公开数据 & 400M & 400M \\
+WenLan-非公开数据 & 30M & 30M \\
+ALIGN-非公开数据 & 1.8B & 1.8B \\
+ZeroVL-非公开数据 & 100M & 100M
+\end{tabular}
+\caption{预训练数据集规模。标注了$^*$的数据集仅包含文本，需要自行下载图片，因此实际可用图片数量小于数据集创建时的大小。}
+\label{tab:dataset}
+\end{table}
+
+可以看到，公开数据集最大规模的CC12M也仅有千万级图文，而非公开数据集则显著大于公开数据集。
+尤其是ALIGN，使用了十亿级网络获取的图文对用于训练，也得到了极好的效果。
+因此，在多模态预训练任务中，虽然提升模型效果是很重要的，
+但是如果迫切需要提升模型性能，在计算资源和数据量都足够的情况下，
+使用更多数据训练是最简便有效的方法，也因此最新效果提升明显的多模态融合工作多为企业发表。
